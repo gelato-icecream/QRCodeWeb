@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR & Barcode Generator</title>
+    <!-- Load qrcode.js and JsBarcode libraries for generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            /* Slate 900 */
+            --card-bg: rgba(30, 41, 59, 0.7);
+            /* Slate 800 with opacity */
+            --text-color: #f8fafc;
+            /* Slate 50 */
+            --primary-accent: #6366f1;
+            /* Indigo 500 */
+            --primary-hover: #4f46e5;
+            /* Indigo 600 */
+            --input-bg: rgba(15, 23, 42, 0.6);
+            --border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #020617 0%, #1e1b4b 100%);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 40px;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+            text-align: center;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(to right, #a5b4fc, #6366f1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.025em;
+        }
+
+        p.subtitle {
+            color: #94a3b8;
+            margin-bottom: 24px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            background: var(--input-bg);
+            padding: 6px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .tab {
+            flex: 1;
+            background: transparent;
+            color: #94a3b8;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.95rem;
+        }
+
+        .tab:hover {
+            color: var(--text-color);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab.active {
+            background: var(--primary-accent);
+            color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.875rem;
+            color: #cbd5e1;
+            font-weight: 500;
+        }
+
+        textarea,
+        input[type="text"],
+        select {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        textarea {
+            padding: 16px;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        input[type="text"] {
+            padding: 14px 16px;
+            display: none;
+            /* Hidden by default, shown for barcode */
+        }
+
+        select {
+            padding: 14px 16px;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            background-size: 16px;
+            cursor: pointer;
+        }
+
+        select option {
+            background-color: #1e293b;
+            color: white;
+            padding: 12px;
+        }
+
+        textarea:focus,
+        input[type="text"]:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary-accent);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
+        textarea::placeholder,
+        input[type="text"]::placeholder {
+            color: #64748b;
+        }
+
+        /* Drag and Drop Zone Styles */
+        .drop-zone {
+            width: 100%;
+            min-height: 70px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #94a3b8;
+            background: var(--input-bg);
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .drop-zone:hover {
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .drop-zone--over {
+            border-style: solid;
+            border-color: var(--primary-accent);
+            background: rgba(99, 102, 241, 0.15);
+            color: var(--text-color);
+        }
+
+        .drop-zone__input {
+            display: none;
+        }
+
+        .btn-text {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .btn-text:hover {
+            opacity: 0.8;
+        }
+
+        .color-settings {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .color-picker {
+            flex: 1;
+            text-align: left;
+        }
+
+        .color-picker label {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        input[type="color"] {
+            -webkit-appearance: none;
+            border: none;
+            width: 100%;
+            height: 36px;
+            border-radius: 8px;
+            cursor: pointer;
+            background: transparent;
+            padding: 0;
+        }
+
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        input[type="color"]::-webkit-color-swatch {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-accent);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 14px 24px;
+            font-size: 1rem;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.2), 0 2px 4px -1px rgba(99, 102, 241, 0.1);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.25), 0 4px 6px -2px rgba(99, 102, 241, 0.1);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        #result-container {
+            margin-top: 32px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            opacity: 0;
+            transform: scale(0.9);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            height: 0;
+            overflow: hidden;
+        }
+
+        #result-container.visible {
+            opacity: 1;
+            transform: scale(1);
+            height: auto;
+            overflow: visible;
+        }
+
+        /* Update styling to use canvas instead of standard qrcodeDiv */
+        #qrcode-display {
+            background: white;
+            padding: 16px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            display: block;
+        }
+
+        #composite-canvas {
+            display: block;
+            margin: 0 auto;
+        }
+
+        #barcode-container {
+            background: white;
+            padding: 16px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            display: none;
+        }
+
+        #barcode {
+            display: block;
+            margin: 0 auto;
+        }
+
+        .download-btn {
+            margin-top: 20px;
+            background-color: transparent;
+            border: 1px solid #475569;
+            color: #f8fafc;
+            border-radius: 12px;
+            padding: 12px 24px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .download-btn:hover {
+            background-color: #334155;
+            border-color: #64748b;
+        }
+
+        .error-message {
+            color: #f87171;
+            font-size: 0.875rem;
+            margin-top: 8px;
+            display: none;
+            text-align: left;
+        }
+
+        .encoded-preview {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 8px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85rem;
+            color: #cbd5e1;
+            word-break: break-all;
+            display: none;
+            text-align: left;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Code Generator</h1>
+        <p class="subtitle">Generate beautiful, scanable QR codes or Barcodes instantly.</p>
+
+        <div class="tabs">
+            <button class="tab active" data-type="qr">QR Code</button>
+            <button class="tab" data-type="barcode">Barcode</button>
+        </div>
+
+        <div class="input-group">
+            <label id="input-label" for="text-input">Your Content</label>
+            <textarea id="text-input" placeholder="e.g., https://example.com or Hello World!"></textarea>
+            <input type="text" id="barcode-input" placeholder="e.g., 123456789012">
+            <div id="error-msg" class="error-message">Please enter some text to generate.</div>
+        </div>
+
+        <div class="input-group" id="logo-upload-group">
+            <label>Center Logo (Optional)</label>
+            <div class="drop-zone" id="drop-zone">
+                <span class="drop-zone__prompt">Drag & Drop an image here or click</span>
+                <input type="file" name="file" id="file-input" class="drop-zone__input" accept="image/*">
+            </div>
+            <div id="logo-preview-container"
+                style="display: none; align-items: center; gap: 12px; background: rgba(15,23,42,0.6); padding: 12px; border-radius: 12px; border: 1px solid rgba(99,102,241,0.3);">
+                <img id="logo-preview" src="" alt="Logo"
+                    style="max-height: 48px; max-width: 48px; min-width: 48px; border-radius: 8px; object-fit: contain; background: white;">
+                <div style="flex: 1;">
+                    <p style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 2px;">Logo Added</p>
+                    <button class="btn-text" id="clear-logo-btn"
+                        style="color: #f87171; padding: 0; margin: 0; font-size: 0.8rem;">Remove Logo</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label for="encoding-format">Convert to Computer Language</label>
+            <select id="encoding-format">
+                <option value="none">Plain Text (Standard)</option>
+                <option value="binary">Binary (0s and 1s)</option>
+                <option value="hex">Hexadecimal</option>
+                <option value="base64">Base64 Encoding</option>
+            </select>
+            <div id="encoded-preview" class="encoded-preview"></div>
+        </div>
+
+        <div class="color-settings" id="color-settings">
+            <div class="color-picker">
+                <label for="color-dark">Code Theme</label>
+                <input type="color" id="color-dark" value="#000000">
+            </div>
+            <div class="color-picker">
+                <label for="color-light">Background</label>
+                <input type="color" id="color-light" value="#ffffff">
+            </div>
+        </div>
+
+        <button id="generate-btn" class="btn-primary">Generate QR Code</button>
+
+        <div id="result-container">
+            <!-- Hidden original canvas from qrcode.js -->
+            <div id="qrcode-hidden" style="display: none;"></div>
+
+            <!-- Display canvas which has the composed QR + Logo -->
+            <div id="qrcode-display">
+                <canvas id="composite-canvas" width="200" height="200"></canvas>
+            </div>
+
+            <div id="barcode-container">
+                <svg id="barcode"></svg>
+            </div>
+            <button id="download-btn" class="download-btn">Download Image</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tabs = document.querySelectorAll('.tab');
+            const generateBtn = document.getElementById('generate-btn');
+            const downloadBtn = document.getElementById('download-btn');
+            const textInput = document.getElementById('text-input');
+            const barcodeInput = document.getElementById('barcode-input');
+            const inputLabel = document.getElementById('input-label');
+            const resultContainer = document.getElementById('result-container');
+
+            const qrcodeDisplay = document.getElementById('qrcode-display');
+            const qrcodeHidden = document.getElementById('qrcode-hidden');
+            const compositeCanvas = document.getElementById('composite-canvas');
+
+            const barcodeContainer = document.getElementById('barcode-container');
+            const barcodeSvg = document.getElementById('barcode');
+            const errorMsg = document.getElementById('error-msg');
+
+            const encodingFormat = document.getElementById('encoding-format');
+            const encodedPreview = document.getElementById('encoded-preview');
+            const colorDark = document.getElementById('color-dark');
+            const colorLight = document.getElementById('color-light');
+
+            const logoUploadGroup = document.getElementById('logo-upload-group');
+            const dropZone = document.getElementById('drop-zone');
+            const fileInput = document.getElementById('file-input');
+            const logoPreviewContainer = document.getElementById('logo-preview-container');
+            const logoPreview = document.getElementById('logo-preview');
+            const clearLogoBtn = document.getElementById('clear-logo-btn');
+
+            let currentMode = 'qr'; // 'qr' or 'barcode'
+            let uploadedLogoUrl = null;
+
+            // Handle Drag and Drop for Logo
+            dropZone.addEventListener('click', () => fileInput.click());
+
+            fileInput.addEventListener('change', (e) => {
+                if (fileInput.files.length) {
+                    processLogo(fileInput.files[0]);
+                }
+            });
+
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('drop-zone--over');
+            });
+
+            ['dragleave', 'dragend'].forEach(type => {
+                dropZone.addEventListener(type, (e) => {
+                    dropZone.classList.remove('drop-zone--over');
+                });
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('drop-zone--over');
+                if (e.dataTransfer.files.length) {
+                    fileInput.files = e.dataTransfer.files;
+                    processLogo(e.dataTransfer.files[0]);
+                }
+            });
+
+            function processLogo(file) {
+                if (file && file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        uploadedLogoUrl = e.target.result;
+                        logoPreview.src = uploadedLogoUrl;
+                        dropZone.style.display = 'none';
+                        logoPreviewContainer.style.display = 'flex';
+
+                        // Regenerate if already visible
+                        if (resultContainer.classList.contains('visible') && currentMode === 'qr') {
+                            generateCode();
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+
+            clearLogoBtn.addEventListener('click', () => {
+                uploadedLogoUrl = null;
+                fileInput.value = '';
+                logoPreview.src = '';
+                logoPreviewContainer.style.display = 'none';
+                dropZone.style.display = 'flex';
+
+                if (resultContainer.classList.contains('visible') && currentMode === 'qr') {
+                    generateCode();
+                }
+            });
+
+            // Tab switching logic
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // Update active tab styling
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+
+                    // Update mode
+                    currentMode = tab.dataset.type;
+
+                    // Update UI based on mode
+                    if (currentMode === 'qr') {
+                        textInput.style.display = 'block';
+                        barcodeInput.style.display = 'none';
+                        logoUploadGroup.style.display = 'block'; // Show logo upload ONLY for QR
+                        inputLabel.textContent = 'Your Content';
+                        generateBtn.textContent = 'Generate QR Code';
+                    } else {
+                        textInput.style.display = 'none';
+                        barcodeInput.style.display = 'block';
+                        logoUploadGroup.style.display = 'none'; // Hide logo upload for barcode
+                        inputLabel.textContent = 'Barcode Value (text or numbers)';
+                        generateBtn.textContent = 'Generate Barcode';
+                    }
+
+                    // Hide result container when switching tabs
+                    resultContainer.classList.remove('visible');
+                    errorMsg.style.display = 'none';
+                    updatePreview();
+                });
+            });
+
+            // Conversion utilities
+            const encodeText = (text, format) => {
+                if (!text) return "";
+                try {
+                    switch (format) {
+                        case 'binary':
+                            return Array.from(text).map(char => {
+                                return char.charCodeAt(0).toString(2).padStart(8, '0');
+                            }).join(' ');
+                        case 'hex':
+                            return Array.from(text).map(char => {
+                                return char.charCodeAt(0).toString(16).padStart(2, '0').toUpperCase();
+                            }).join(' ');
+                        case 'base64':
+                            return btoa(unescape(encodeURIComponent(text)));
+                        default:
+                            return text;
+                    }
+                } catch (e) {
+                    console.error("Encoding error:", e);
+                    return text; // Fallback to raw text
+                }
+            };
+
+            const updatePreview = () => {
+                const inputElement = currentMode === 'qr' ? textInput : barcodeInput;
+                const text = inputElement.value.trim();
+                const format = encodingFormat.value;
+
+                if (!text || format === 'none') {
+                    encodedPreview.style.display = 'none';
+                } else {
+                    const encoded = encodeText(text, format);
+                    encodedPreview.textContent = encoded;
+                    encodedPreview.style.display = 'block';
+                }
+            };
+
+            [textInput, barcodeInput, encodingFormat].forEach(el => {
+                el.addEventListener('input', () => {
+                    updatePreview();
+                    if (resultContainer.classList.contains('visible')) {
+                        generateCode();
+                    }
+                });
+            });
+
+            function generateCode() {
+                const inputElement = currentMode === 'qr' ? textInput : barcodeInput;
+                let text = inputElement.value.trim();
+                const format = encodingFormat.value;
+
+                if (!text) {
+                    errorMsg.textContent = `Please enter some text to generate a ${currentMode === 'qr' ? 'QR code' : 'barcode'}.`;
+                    errorMsg.style.display = 'block';
+                    resultContainer.classList.remove('visible');
+                    return;
+                }
+
+                errorMsg.style.display = 'none';
+
+                // Process encode format
+                text = encodeText(text, format);
+
+                const darkValue = colorDark.value;
+                const lightValue = colorLight.value;
+
+                if (currentMode === 'qr') {
+                    qrcodeDisplay.style.display = 'block';
+                    barcodeContainer.style.display = 'none';
+                    qrcodeDisplay.style.backgroundColor = lightValue;
+
+                    if (text.length > 2000) {
+                        errorMsg.textContent = "Encoded text is too long for a single QR Code.";
+                        errorMsg.style.display = 'block';
+                        return;
+                    }
+
+                    // Clear hidden container and regenerate
+                    qrcodeHidden.innerHTML = '';
+
+                    // Use High error correction (H) so removing the center naturally won't break scanning
+                    new QRCode(qrcodeHidden, {
+                        text: text,
+                        width: 200,
+                        height: 200,
+                        colorDark: darkValue,
+                        colorLight: lightValue,
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+
+                    const drawComposite = (sourceImage) => {
+                        const ctx = compositeCanvas.getContext('2d');
+                        // Fill background
+                        ctx.fillStyle = lightValue;
+                        ctx.fillRect(0, 0, 200, 200);
+
+                        // Draw standard QR
+                        ctx.drawImage(sourceImage, 0, 0, 200, 200);
+
+                        // If there is an uploaded logo, overlay it
+                        if (uploadedLogoUrl) {
+                            const logo = new Image();
+                            logo.onload = () => {
+                                const logoSize = 48; // About 24% of the QR Code
+                                const x = (200 - logoSize) / 2;
+                                const y = (200 - logoSize) / 2;
+
+                                // Draw protective background border for logo visibility
+                                ctx.fillStyle = lightValue;
+                                ctx.beginPath();
+                                if (ctx.roundRect) {
+                                    ctx.roundRect(x - 4, y - 4, logoSize + 8, logoSize + 8, 8);
+                                } else {
+                                    ctx.fillRect(x - 4, y - 4, logoSize + 8, logoSize + 8);
+                                }
+                                ctx.fill();
+
+                                // Draw logo perfectly sized inside
+                                ctx.save();
+                                if (ctx.roundRect) {
+                                    ctx.beginPath();
+                                    ctx.roundRect(x, y, logoSize, logoSize, 6);
+                                    ctx.clip();
+                                }
+                                ctx.drawImage(logo, x, y, logoSize, logoSize);
+                                ctx.restore();
+                            };
+                            logo.src = uploadedLogoUrl;
+                        }
+                    };
+
+                    // Extract what library produced and draw to composite canvas
+                    const qrCanvas = qrcodeHidden.querySelector('canvas');
+                    if (qrCanvas) {
+                        drawComposite(qrCanvas);
+                    } else {
+                        const qrImg = qrcodeHidden.querySelector('img');
+                        if (qrImg) {
+                            if (qrImg.complete) {
+                                drawComposite(qrImg);
+                            } else {
+                                qrImg.onload = () => drawComposite(qrImg);
+                            }
+                        }
+                    }
+
+                } else {
+                    qrcodeDisplay.style.display = 'none';
+                    barcodeContainer.style.display = 'block';
+                    barcodeContainer.style.backgroundColor = lightValue;
+
+                    if (text.length > 80) {
+                        errorMsg.textContent = "Encoded text is too long for a standard Barcode. Use a QR code instead.";
+                        errorMsg.style.display = 'block';
+                        resultContainer.classList.remove('visible');
+                        return;
+                    }
+
+                    try {
+                        JsBarcode("#barcode", text, {
+                            format: "CODE128",
+                            lineColor: darkValue,
+                            width: 2,
+                            height: 100,
+                            displayValue: true,
+                            background: lightValue
+                        });
+                    } catch (e) {
+                        errorMsg.textContent = "Invalid characters for Barcode after conversion. Try plain text.";
+                        errorMsg.style.display = 'block';
+                        resultContainer.classList.remove('visible');
+                        return;
+                    }
+                }
+
+                setTimeout(() => {
+                    resultContainer.classList.add('visible');
+                }, 50);
+            }
+
+            generateBtn.addEventListener('click', generateCode);
+
+            colorDark.addEventListener('input', () => {
+                if (resultContainer.classList.contains('visible')) generateCode();
+            });
+            colorLight.addEventListener('input', () => {
+                if (resultContainer.classList.contains('visible')) generateCode();
+            });
+
+            function handleEnter(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    generateCode();
+                }
+            }
+            textInput.addEventListener('keydown', handleEnter);
+            barcodeInput.addEventListener('keydown', handleEnter);
+
+            function handleInput() {
+                if (this.value.trim()) {
+                    errorMsg.style.display = 'none';
+                }
+            }
+            textInput.addEventListener('input', handleInput);
+            barcodeInput.addEventListener('input', handleInput);
+
+            downloadBtn.addEventListener('click', () => {
+                const link = document.createElement('a');
+
+                if (currentMode === 'qr') {
+                    // Export from the new composite canvas
+                    const exportCanvas = document.createElement("canvas");
+                    const ctx = exportCanvas.getContext("2d");
+                    const padding = 16;
+
+                    exportCanvas.width = compositeCanvas.width + (padding * 2);
+                    exportCanvas.height = compositeCanvas.height + (padding * 2);
+
+                    ctx.fillStyle = colorLight.value;
+                    ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+                    ctx.drawImage(compositeCanvas, padding, padding);
+
+                    link.download = 'qrcode.png';
+                    link.href = exportCanvas.toDataURL("image/png");
+
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+
+                } else {
+                    const svgData = new XMLSerializer().serializeToString(barcodeSvg);
+                    const canvas = document.createElement("canvas");
+                    const ctx = canvas.getContext("2d");
+                    const img = new Image();
+
+                    img.onload = function () {
+                        const padding = 16;
+                        canvas.width = img.width + (padding * 2);
+                        canvas.height = img.height + (padding * 2);
+
+                        ctx.fillStyle = colorLight.value;
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(img, padding, padding);
+
+                        link.download = 'barcode.png';
+                        link.href = canvas.toDataURL("image/png");
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    };
+
+                    const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+                    const url = URL.createObjectURL(svgBlob);
+                    img.src = url;
+                    return;
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
